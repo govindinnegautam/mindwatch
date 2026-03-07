@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MindWatch — Mental Health Risk Monitor</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0f1117;
+    color: #e1e4e8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  header h1 {
+    font-size: 2.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6ee7f7, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  header p {
+    color: #8b949e;
+    font-size: 1rem;
+  }
+
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 24px;
+  }
+
+  .card h2 {
+    font-size: 1.1rem;
+    color: #a78bfa;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    color: #8b949e;
+    margin-bottom: 6px;
+    margin-top: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  textarea, input[type=range] {
+    width: 100%;
+  }
+
+  textarea {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    color: #e1e4e8;
+    font-size: 0.95rem;
+    padding: 14px;
+    resize: vertical;
+    min-height: 120px;
+    transition: border 0.2s;
+    font-family: inherit;
+    line-height: 1.6;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: #a78bfa;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 6px;
+    background: #30363d;
+    border-radius: 3px;
+    flex: 1;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #a78bfa;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .slider-val {
+    min-width: 50px;
+    text-align: right;
+    font-size: 0.9rem;
+    color: #6ee7f7;
+    font-weight: 600;
+  }
+
+  .btn {
+    margin-top: 28px;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #a78bfa, #6ee7f7);
+    border: none;
+    border-radius: 10px;
+    color: #0f1117;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    letter-spacing: 0.03em;
+  }
+
+  .btn:hover { opacity: 0.9; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Result panel */
+  #result-card {
+    display: none;
+  }
+
+  .risk-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .LOW      { background: #1a3a2a; color: #3fb950; border: 1px solid #3fb950; }
+  .MODERATE { background: #3a2a00; color: #d29922; border: 1px solid #d29922; }
+  .HIGH     { background: #3a1a1a; color: #f85149; border: 1px solid #f85149; }
+
+  .score-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 20px 0 8px;
+  }
+
+  .score-bar-bg {
+    background: #21262d;
+    border-radius: 8px;
+    height: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.6s ease;
+  }
+
+  .interpretation {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 0.93rem;
+    line-height: 1.6;
+    color: #c9d1d9;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .metric-box {
+    background: #0d1117;
+    border: 1px solid #21262d;
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+
+  .metric-box .val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #6ee7f7;
+  }
+
+  .metric-box .lbl {
+    font-size: 0.75rem;
+    color: #6e7681;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .disclaimer {
+    max-width: 700px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: #484f58;
+    margin-top: 20px;
+    line-height: 1.6;
+  }
+
+  /* Keystroke live capture UI */
+  .capture-area {
+    position: relative;
+  }
+
+  #keystroke-status {
+    font-size: 0.78rem;
+    color: #3fb950;
+    margin-top: 6px;
+    min-height: 18px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧠 MindWatch</h1>
+  <p>Multimodal Mental Health Risk Monitor &nbsp;·&nbsp; Text + Typing Behavior Analysis</p>
+</header>
+
+<!-- Input Card -->
+<div class="card">
+  <h2>✍️ Input</h2>
+
+  <label>Your text (social media post, journal entry, message…)</label>
+  <div class="capture-area">
+    <textarea id="text-input"
+      placeholder="Start typing here. How have you been feeling lately?"
+      oninput="onType(event)"
+    ></textarea>
+    <div id="keystroke-status"></div>
+  </div>
+
+  <label>Typing Speed <span style="color:#484f58">(keystrokes / sec)</span></label>
+  <div class="slider-row">
+    <input type="range" id="speed-slider" min="10" max="120" step="0.5" value="60"
+           oninput="updateSlider('speed', this.value)">
+    <span class="slider-val" id="speed-val">60.0</span>
+  </div>
+
+  <label>Keystroke Latency <span style="color:#484f58">(avg seconds between keys)</span></label>
+  <div class="slider-row">
+    <input type="range" id="latency-slider" min="0.05" max="0.60" step="0.01" value="0.12"
+           oninput="updateSlider('latency', this.value)">
+    <span class="slider-val" id="latency-val">0.12</span>
+  </div>
+
+  <label>Error Rate <span style="color:#484f58">(ratio of backspace / delete keys)</span></label>
+  <div class="slider-row">
+    <input type="range" id="error-slider" min="0.00" max="0.30" step="0.005" value="0.05"
+           oninput="updateSlider('error', this.value)">
+    <span class="slider-val" id="error-val">0.050</span>
+  </div>
+
+  <button class="btn" id="predict-btn" onclick="runPrediction()">
+    Analyze Mental Health Risk
+  </button>
+</div>
+
+<!-- Result Card -->
+<div class="card" id="result-card">
+  <h2>📊 Result</h2>
+
+  <div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
+    <span id="risk-badge" class="risk-badge">—</span>
+    <span style="color:#8b949e; font-size:0.9rem;" id="conf-text"></span>
+  </div>
+
+  <div class="score-row">
+    <span style="font-size:0.82rem; color:#6e7681;">Risk Score</span>
+    <span id="score-text" style="font-size:1.1rem; font-weight:700; color:#e1e4e8;">—</span>
+  </div>
+  <div class="score-bar-bg">
+    <div class="score-bar-fill" id="score-bar" style="width:0%;"></div>
+  </div>
+
+  <div class="interpretation" id="interpretation-text">—</div>
+
+  <div class="metric-grid">
+    <div class="metric-box">
+      <div class="val" id="m-speed">—</div>
+      <div class="lbl">Typing Speed</div>
+    </div>
+    <div class="metric-box">
+      <div class="val" id="m-latency">—</div>
+      <div class="lbl">Latency (s)</div>
+    </div>
+    <div class="metric-box">
+      <div class="val" id="m-error">—</div>
+      <div class="lbl">Error Rate</div>
+    </div>
+  </div>
+</div>
+
+<p class="disclaimer">
+  ⚠️ MindWatch is a research prototype for academic purposes only.
+  It does not provide medical diagnoses. If you are experiencing mental health difficulties,
+  please consult a qualified healthcare professional.
+</p>
+
+<script>
+// ── Keystroke live capture ─────────────────────────────────
+let keyTimestamps  = [];
+let correctionKeys = 0;
+
+function onType(e) {
+  const now = performance.now() / 1000; // seconds
+  keyTimestamps.push(now);
+
+  // Detect if backspace was pressed (fires oninput after deletion)
+  if (e.inputType === "deleteContentBackward") correctionKeys++;
+
+  // Auto-update sliders from live typing
+  if (keyTimestamps.length >= 5) {
+    const N         = keyTimestamps.length;
+    const totalTime = keyTimestamps[N-1] - keyTimestamps[0];
+    const speed     = totalTime > 0 ? N / totalTime : 0;
+
+    const delays   = [];
+    for (let i = 1; i < N; i++) delays.push(keyTimestamps[i] - keyTimestamps[i-1]);
+    const latency  = delays.reduce((a,b)=>a+b,0) / delays.length;
+    const errRate  = correctionKeys / N;
+
+    // Clamp and update sliders
+    document.getElementById("speed-slider").value  = Math.min(120, Math.max(10, speed)).toFixed(1);
+    document.getElementById("latency-slider").value = Math.min(0.60, Math.max(0.05, latency)).toFixed(3);
+    document.getElementById("error-slider").value   = Math.min(0.30, Math.max(0, errRate)).toFixed(3);
+
+    updateSlider("speed",   document.getElementById("speed-slider").value);
+    updateSlider("latency", document.getElementById("latency-slider").value);
+    updateSlider("error",   document.getElementById("error-slider").value);
+
+    document.getElementById("keystroke-status").textContent =
+      `🎹 Live: ${N} keystrokes recorded · Speed: ${speed.toFixed(1)} k/s · Latency: ${latency.toFixed(3)}s`;
+  }
+}
+
+function updateSlider(name, val) {
+  const map = { speed:"speed-val", latency:"latency-val", error:"error-val" };
+  const dp  = { speed:1, latency:3, error:3 };
+  document.getElementById(map[name]).textContent = parseFloat(val).toFixed(dp[name]);
+}
+
+// ── Prediction ──────────────────────────────────────────────
+async function runPrediction() {
+  const text    = document.getElementById("text-input").value.trim();
+  const speed   = parseFloat(document.getElementById("speed-slider").value);
+  const latency = parseFloat(document.getElementById("latency-slider").value);
+  const errors  = parseFloat(document.getElementById("error-slider").value);
+
+  if (!text) {
+    alert("Please enter some text first.");
+    return;
+  }
+
+  const btn = document.getElementById("predict-btn");
+  btn.disabled   = true;
+  btn.innerHTML  = '<span class="spinner"></span> Analyzing…';
+
+  try {
+    const res = await fetch("/predict", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text,
+        typing_speed:      speed,
+        keystroke_latency: latency,
+        error_rate:        errors,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "API error");
+    }
+
+    const data = await res.json();
+    showResult(data, speed, latency, errors);
+
+  } catch (err) {
+    // Demo mode when API is offline
+    showDemoResult(text, speed, latency, errors);
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = "Analyze Mental Health Risk";
+}
+
+function showResult(data, speed, latency, errors) {
+  const card = document.getElementById("result-card");
+  card.style.display = "block";
+  card.scrollIntoView({ behavior: "smooth" });
+
+  const pct = (data.risk_score * 100).toFixed(1);
+
+  document.getElementById("risk-badge").textContent    = data.risk_level;
+  document.getElementById("risk-badge").className      = `risk-badge ${data.risk_level}`;
+  document.getElementById("conf-text").textContent     = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
+  document.getElementById("score-text").textContent    = `${pct}%`;
+  document.getElementById("interpretation-text").textContent = data.interpretation;
+
+  const bar = document.getElementById("score-bar");
+  const colors = { LOW:"#3fb950", MODERATE:"#d29922", HIGH:"#f85149" };
+  bar.style.width      = pct + "%";
+  bar.style.background = colors[data.risk_level];
+
+  document.getElementById("m-speed").textContent   = speed.toFixed(1);
+  document.getElementById("m-latency").textContent = latency.toFixed(3);
+  document.getElementById("m-error").textContent   = (errors * 100).toFixed(1) + "%";
+}
+
+// Demo mode — client-side heuristic when API is not running
+function showDemoResult(text, speed, latency, errors) {
+  const lowerText = text.toLowerCase();
+  const negWords  = ["hopeless","exhausted","empty","tired","anxious","worried","scared",
+                     "hate","crying","numb","trapped","failing","struggle","dark","pain"];
+  const posWords  = ["great","happy","grateful","excited","good","amazing","productive",
+                     "positive","relaxed","confident","love","wonderful","enjoying"];
+
+  let textScore = 0.5;
+  negWords.forEach(w => { if (lowerText.includes(w)) textScore += 0.06; });
+  posWords.forEach(w => { if (lowerText.includes(w)) textScore -= 0.06; });
+
+  // Keystroke contribution
+  const speedNorm   = 1 - Math.min(1, Math.max(0, (speed - 10) / 110));
+  const latencyNorm = Math.min(1, latency / 0.6);
+  const errorNorm   = Math.min(1, errors  / 0.3);
+  const keystrokeScore = (speedNorm * 0.4 + latencyNorm * 0.3 + errorNorm * 0.3);
+
+  const finalScore = Math.max(0, Math.min(1, textScore * 0.7 + keystrokeScore * 0.3));
+  const level = finalScore >= 0.6 ? "HIGH" : finalScore >= 0.4 ? "MODERATE" : "LOW";
+
+  const interps = {
+    HIGH:     "⚠️ Elevated mental health risk indicators detected. Consider speaking with a mental health professional.",
+    MODERATE: "🟡 Some stress indicators present. Practice self-care and monitor your wellbeing.",
+    LOW:      "✅ Low risk indicators. Keep maintaining healthy habits and routines.",
+  };
+
+  showResult({
+    risk_score:    finalScore,
+    risk_level:    level,
+    confidence:    Math.abs(finalScore - 0.5) * 2,
+    interpretation: interps[level] + " (Demo mode — start API for real predictions)",
+  }, speed, latency, errors);
+}
+</script>
+
+</body>
+</html>
