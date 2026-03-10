@@ -779,20 +779,21 @@
     const now = performance.now();
     const elapsed = (now - sessionStart) / 1000 || 1;
     const chars = textarea.value.length;
-    const speed = chars / elapsed;
+    const speed = chars / elapsed;  // chars per second
 
-    let avgLatency = 100;
+    // Average latency in SECONDS (API expects seconds, not ms)
+    let avgLatencySec = 0.15; // default fallback
     if (keyTimes.length > 1) {
       const diffs = [];
       for (let i = 1; i < keyTimes.length; i++) diffs.push(keyTimes[i] - keyTimes[i-1]);
-      avgLatency = diffs.reduce((a,b) => a+b, 0) / diffs.length;
+      avgLatencySec = (diffs.reduce((a,b) => a+b, 0) / diffs.length) / 1000; // ms → seconds
     }
 
     const errorRate = totalKeys > 0 ? backspaceCount / totalKeys : 0;
 
     return {
-      keystrokes: keyTimes.slice(-20).map((t, i) => i > 0 ? keyTimes[i] - keyTimes[i-1] : 0),
       typing_speed: parseFloat(speed.toFixed(2)),
+      keystroke_latency: parseFloat(avgLatencySec.toFixed(4)),  // seconds
       error_rate: parseFloat(errorRate.toFixed(3))
     };
   }
@@ -847,8 +848,8 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: text,
-          keystrokes: ks.keystrokes,
           typing_speed: ks.typing_speed,
+          keystroke_latency: ks.keystroke_latency,
           error_rate: ks.error_rate
         })
       });
@@ -870,15 +871,15 @@
 
   function showResults(data, ks) {
     const riskScore = Math.round((data.risk_score || 0) * 100);
-    const label = data.label || 'unknown';
-    const confidence = data.confidence || (riskScore);
+    const riskLevel = data.risk_level || 'LOW';
+    const confidence = data.confidence || riskScore;
 
     // Badge
     const badge = document.getElementById('resultBadge');
-    if (riskScore < 35) {
+    if (riskLevel === 'LOW') {
       badge.textContent = '✓ Low Risk';
       badge.className = 'result-badge safe';
-    } else if (riskScore < 65) {
+    } else if (riskLevel === 'MODERATE') {
       badge.textContent = '⚠ Moderate Risk';
       badge.className = 'result-badge moderate';
     } else {
@@ -886,7 +887,7 @@
       badge.className = 'result-badge risk';
     }
 
-    document.getElementById('confidenceText').textContent = `${confidence.toFixed ? confidence.toFixed(1) : confidence}% confidence`;
+    document.getElementById('confidenceText').textContent = `${typeof confidence === 'number' ? confidence.toFixed(1) : confidence}% confidence`;
 
     // Gauge + bars
     setTimeout(() => setGauge(riskScore), 100);
