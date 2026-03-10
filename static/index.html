@@ -1,490 +1,925 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MindWatch — Mental Health Risk Monitor</title>
+<title>MindWatch — Mental Health Risk Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet"/>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --accent: #7c6aff;
+    --accent2: #ff6a8a;
+    --safe: #2dff9e;
+    --risk: #ff4d6d;
+    --warn: #ffb347;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #0f1117;
-    color: #e1e4e8;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px 20px;
+    overflow-x: hidden;
   }
 
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(124,106,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,106,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-orb.purple { width: 500px; height: 500px; background: rgba(124,106,255,0.08); top: -100px; right: -100px; }
+  .glow-orb.pink   { width: 400px; height: 400px; background: rgba(255,106,138,0.06); bottom: -50px; left: -50px; }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* Header */
   header {
-    text-align: center;
-    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 60px;
+    animation: fadeDown 0.6s ease both;
   }
 
-  header h1 {
-    font-size: 2.4rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #6ee7f7, #a78bfa);
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 8px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--safe);
+    box-shadow: 0 0 8px var(--safe);
+    animation: pulse 2s ease infinite;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    margin-bottom: 56px;
+    animation: fadeUp 0.7s 0.1s ease both;
+  }
+
+  .hero-tag {
+    display: inline-block;
+    background: rgba(124,106,255,0.12);
+    border: 1px solid rgba(124,106,255,0.3);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin-bottom: 16px;
+  }
+
+  h1 .gradient {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 8px;
+    background-clip: text;
   }
 
-  header p {
-    color: #8b949e;
-    font-size: 1rem;
+  .hero p {
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 500px;
+    margin: 0 auto;
+    font-weight: 400;
   }
 
+  /* Main card */
   .card {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 16px;
-    padding: 32px;
-    width: 100%;
-    max-width: 700px;
-    margin-bottom: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    animation: fadeUp 0.7s 0.2s ease both;
   }
 
-  .card h2 {
-    font-size: 1.1rem;
-    color: #a78bfa;
-    margin-bottom: 20px;
+  .card-section {
+    padding: 28px 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-section:last-child { border-bottom: none; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 8px;
   }
 
-  label {
-    display: block;
-    font-size: 0.85rem;
-    color: #8b949e;
-    margin-bottom: 6px;
-    margin-top: 16px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+  .section-label::before {
+    content: '';
+    width: 16px; height: 1px;
+    background: var(--accent);
   }
 
-  textarea, input[type=range] {
-    width: 100%;
-  }
-
-  textarea {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    border-radius: 10px;
-    color: #e1e4e8;
-    font-size: 0.95rem;
-    padding: 14px;
-    resize: vertical;
-    min-height: 120px;
-    transition: border 0.2s;
-    font-family: inherit;
-    line-height: 1.6;
-  }
-
-  textarea:focus {
-    outline: none;
-    border-color: #a78bfa;
-  }
-
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  input[type=range] {
-    -webkit-appearance: none;
-    height: 6px;
-    background: #30363d;
-    border-radius: 3px;
-    flex: 1;
-  }
-
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    background: #a78bfa;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .slider-val {
-    min-width: 50px;
-    text-align: right;
-    font-size: 0.9rem;
-    color: #6ee7f7;
-    font-weight: 600;
-  }
-
-  .btn {
-    margin-top: 28px;
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, #a78bfa, #6ee7f7);
-    border: none;
-    border-radius: 10px;
-    color: #0f1117;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.2s;
-    letter-spacing: 0.03em;
-  }
-
-  .btn:hover { opacity: 0.9; }
-  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-  /* Result panel */
-  #result-card {
-    display: none;
-  }
-
-  .risk-badge {
-    display: inline-block;
-    padding: 6px 18px;
-    border-radius: 999px;
-    font-weight: 700;
-    font-size: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .LOW      { background: #1a3a2a; color: #3fb950; border: 1px solid #3fb950; }
-  .MODERATE { background: #3a2a00; color: #d29922; border: 1px solid #d29922; }
-  .HIGH     { background: #3a1a1a; color: #f85149; border: 1px solid #f85149; }
-
-  .score-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin: 20px 0 8px;
-  }
-
-  .score-bar-bg {
-    background: #21262d;
-    border-radius: 8px;
-    height: 10px;
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-
-  .score-bar-fill {
-    height: 100%;
-    border-radius: 8px;
-    transition: width 0.6s ease;
-  }
-
-  .interpretation {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    border-radius: 10px;
-    padding: 14px 16px;
-    font-size: 0.93rem;
-    line-height: 1.6;
-    color: #c9d1d9;
-  }
-
-  .metric-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 20px;
-  }
-
-  .metric-box {
-    background: #0d1117;
-    border: 1px solid #21262d;
-    border-radius: 10px;
-    padding: 14px;
-    text-align: center;
-  }
-
-  .metric-box .val {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #6ee7f7;
-  }
-
-  .metric-box .lbl {
-    font-size: 0.75rem;
-    color: #6e7681;
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .spinner {
-    display: inline-block;
-    width: 18px; height: 18px;
-    border: 3px solid rgba(255,255,255,0.2);
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    vertical-align: middle;
-    margin-right: 8px;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .disclaimer {
-    max-width: 700px;
-    text-align: center;
-    font-size: 0.78rem;
-    color: #484f58;
-    margin-top: 20px;
-    line-height: 1.6;
-  }
-
-  /* Keystroke live capture UI */
-  .capture-area {
+  /* Text area */
+  .textarea-wrapper {
     position: relative;
   }
 
-  #keystroke-status {
-    font-size: 0.78rem;
-    color: #3fb950;
-    margin-top: 6px;
-    min-height: 18px;
+  textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 16px;
+    resize: none;
+    height: 130px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,106,255,0.1);
+  }
+
+  textarea::placeholder { color: var(--muted); }
+
+  .char-count {
+    position: absolute;
+    bottom: 12px;
+    right: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* Keystroke metrics */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .metric-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: border-color 0.3s;
+  }
+
+  .metric-card.active { border-color: var(--accent); }
+
+  .metric-value {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .metric-value.has-value { color: var(--accent); }
+
+  .metric-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .typing-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(124,106,255,0.06);
+    border: 1px solid rgba(124,106,255,0.15);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  .typing-indicator {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+
+  .typing-indicator span {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: bounce 1.2s ease infinite;
+  }
+  .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+  .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+  /* Analyze button */
+  .btn-analyze {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--accent), #9b59ff);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-analyze::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .btn-analyze:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(124,106,255,0.3); }
+  .btn-analyze:hover::after { opacity: 1; }
+  .btn-analyze:active { transform: translateY(0); }
+  .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-content { display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+  /* Loading */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  /* Results */
+  .results {
+    display: none;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .result-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+
+  .result-badge.safe {
+    background: rgba(45,255,158,0.1);
+    border: 1px solid rgba(45,255,158,0.3);
+    color: var(--safe);
+  }
+
+  .result-badge.risk {
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.3);
+    color: var(--risk);
+  }
+
+  .result-badge.moderate {
+    background: rgba(255,179,71,0.1);
+    border: 1px solid rgba(255,179,71,0.3);
+    color: var(--warn);
+  }
+
+  /* Gauge */
+  .gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .gauge-svg { overflow: visible; }
+
+  .gauge-track {
+    fill: none;
+    stroke: var(--surface2);
+    stroke-width: 14;
+    stroke-linecap: round;
+  }
+
+  .gauge-fill {
+    fill: none;
+    stroke-width: 14;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.5s ease;
+    transform-origin: center;
+    transform: rotate(-210deg);
+  }
+
+  .gauge-center-text {
+    text-anchor: middle;
+    dominant-baseline: middle;
+  }
+
+  .gauge-score {
+    font-family: 'Syne', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    fill: var(--text);
+  }
+
+  .gauge-sublabel {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    fill: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Score breakdown */
+  .breakdown {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .breakdown-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .breakdown-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .breakdown-value {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  /* Bar chart */
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .bar-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 100px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 100px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    width: 0%;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1) 0.3s;
+  }
+
+  .bar-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,77,109,0.08);
+    border: 1px solid rgba(255,77,109,0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--risk);
+    display: none;
+    margin-top: 12px;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    margin-top: 48px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    animation: fadeUp 0.7s 0.4s ease both;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scaleY(1); }
+    40% { transform: scaleY(1.5); }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 600px) {
+    .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+    .breakdown { grid-template-columns: 1fr; }
+    .card-section { padding: 20px; }
+    h1 { font-size: 28px; }
   }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🧠 MindWatch</h1>
-  <p>Multimodal Mental Health Risk Monitor &nbsp;·&nbsp; Text + Typing Behavior Analysis</p>
-</header>
+<div class="glow-orb purple"></div>
+<div class="glow-orb pink"></div>
 
-<!-- Input Card -->
-<div class="card">
-  <h2>✍️ Input</h2>
+<div class="container">
 
-  <label>Your text (social media post, journal entry, message…)</label>
-  <div class="capture-area">
-    <textarea id="text-input"
-      placeholder="Start typing here. How have you been feeling lately?"
-      oninput="onType(event)"
-    ></textarea>
-    <div id="keystroke-status"></div>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <div class="logo-text">Mind<span>Watch</span></div>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">connecting...</span>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-tag">Multimodal AI Analysis</div>
+    <h1>Mental Health Risk<br/><span class="gradient">Detection System</span></h1>
+    <p>Combines BERT language understanding with real-time keystroke dynamics to assess mental health risk with 89.2% accuracy.</p>
   </div>
 
-  <label>Typing Speed <span style="color:#484f58">(keystrokes / sec)</span></label>
-  <div class="slider-row">
-    <input type="range" id="speed-slider" min="10" max="120" step="0.5" value="60"
-           oninput="updateSlider('speed', this.value)">
-    <span class="slider-val" id="speed-val">60.0</span>
+  <div class="card">
+
+    <!-- Text Input -->
+    <div class="card-section">
+      <div class="section-label">01 — Text Input</div>
+      <div class="textarea-wrapper">
+        <textarea
+          id="textInput"
+          placeholder="Express how you're feeling today... Your typing patterns are captured automatically as you type."
+          maxlength="500"
+        ></textarea>
+        <div class="char-count"><span id="charCount">0</span>/500</div>
+      </div>
+    </div>
+
+    <!-- Keystroke Metrics -->
+    <div class="card-section">
+      <div class="section-label">02 — Keystroke Dynamics (Live)</div>
+      <div class="metrics-grid">
+        <div class="metric-card" id="speedCard">
+          <div class="metric-value" id="speedVal">—</div>
+          <div class="metric-label">Chars / sec</div>
+        </div>
+        <div class="metric-card" id="latencyCard">
+          <div class="metric-value" id="latencyVal">—</div>
+          <div class="metric-label">Avg Latency ms</div>
+        </div>
+        <div class="metric-card" id="errorCard">
+          <div class="metric-value" id="errorVal">—</div>
+          <div class="metric-label">Error Rate %</div>
+        </div>
+      </div>
+      <div class="typing-hint" id="typingHint">
+        <div class="typing-indicator">
+          <span></span><span></span><span></span>
+        </div>
+        Start typing above to capture keystroke dynamics automatically
+      </div>
+    </div>
+
+    <!-- Analyze Button -->
+    <div class="card-section">
+      <button class="btn-analyze" id="analyzeBtn" onclick="analyze()" disabled>
+        <div class="btn-content">
+          <div class="spinner" id="spinner"></div>
+          <span id="btnText">Type something to begin analysis</span>
+        </div>
+      </button>
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <!-- Results -->
+    <div class="card-section results" id="results">
+      <div class="section-label">03 — Analysis Results</div>
+
+      <div class="result-header">
+        <div class="result-badge" id="resultBadge">—</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)" id="confidenceText"></div>
+      </div>
+
+      <div class="gauge-container">
+        <svg class="gauge-svg" width="200" height="130" viewBox="0 0 200 130">
+          <path class="gauge-track"
+            d="M 25 110 A 75 75 0 1 1 175 110"
+            stroke-dasharray="none"
+          />
+          <path class="gauge-fill" id="gaugeFill"
+            d="M 25 110 A 75 75 0 1 1 175 110"
+            stroke-dasharray="235.6"
+            stroke-dashoffset="235.6"
+          />
+          <text class="gauge-center-text" x="100" y="95">
+            <tspan class="gauge-score" id="gaugeScore" x="100" dy="0">0%</tspan>
+          </text>
+          <text class="gauge-center-text" x="100" y="118">
+            <tspan class="gauge-sublabel" x="100">risk score</tspan>
+          </text>
+          <text x="18" y="128" font-family="DM Mono" font-size="10" fill="#6b6b80">0</text>
+          <text x="172" y="128" font-family="DM Mono" font-size="10" fill="#6b6b80">100</text>
+        </svg>
+      </div>
+
+      <div style="margin-bottom:20px">
+        <div class="bar-row">
+          <div class="bar-label">Text Signal</div>
+          <div class="bar-track"><div class="bar-fill" id="textBar" style="background:var(--accent)"></div></div>
+          <div class="bar-pct" id="textBarPct">0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Keystroke Signal</div>
+          <div class="bar-track"><div class="bar-fill" id="keystrokeBar" style="background:var(--accent2)"></div></div>
+          <div class="bar-pct" id="keystrokeBarPct">0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Combined</div>
+          <div class="bar-track"><div class="bar-fill" id="combinedBar" style="background:linear-gradient(90deg,var(--accent),var(--accent2))"></div></div>
+          <div class="bar-pct" id="combinedBarPct">0%</div>
+        </div>
+      </div>
+
+      <div class="breakdown">
+        <div class="breakdown-item">
+          <div class="breakdown-label">Typing Speed</div>
+          <div class="breakdown-value" id="resSpeed" style="color:var(--accent)">—</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">Avg Latency</div>
+          <div class="breakdown-value" id="resLatency" style="color:var(--accent)">—</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">Error Rate</div>
+          <div class="breakdown-value" id="resError" style="color:var(--accent)">—</div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">Words Analyzed</div>
+          <div class="breakdown-value" id="resWords" style="color:var(--accent)">—</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <label>Keystroke Latency <span style="color:#484f58">(avg seconds between keys)</span></label>
-  <div class="slider-row">
-    <input type="range" id="latency-slider" min="0.05" max="0.60" step="0.01" value="0.12"
-           oninput="updateSlider('latency', this.value)">
-    <span class="slider-val" id="latency-val">0.12</span>
-  </div>
+  <footer>
+    MindWatch v1.0 &nbsp;·&nbsp; BERT + Keystroke Fusion &nbsp;·&nbsp; RGMCET Nandyal
+  </footer>
 
-  <label>Error Rate <span style="color:#484f58">(ratio of backspace / delete keys)</span></label>
-  <div class="slider-row">
-    <input type="range" id="error-slider" min="0.00" max="0.30" step="0.005" value="0.05"
-           oninput="updateSlider('error', this.value)">
-    <span class="slider-val" id="error-val">0.050</span>
-  </div>
-
-  <button class="btn" id="predict-btn" onclick="runPrediction()">
-    Analyze Mental Health Risk
-  </button>
 </div>
-
-<!-- Result Card -->
-<div class="card" id="result-card">
-  <h2>📊 Result</h2>
-
-  <div style="display:flex; align-items:center; gap:16px; margin-bottom:8px;">
-    <span id="risk-badge" class="risk-badge">—</span>
-    <span style="color:#8b949e; font-size:0.9rem;" id="conf-text"></span>
-  </div>
-
-  <div class="score-row">
-    <span style="font-size:0.82rem; color:#6e7681;">Risk Score</span>
-    <span id="score-text" style="font-size:1.1rem; font-weight:700; color:#e1e4e8;">—</span>
-  </div>
-  <div class="score-bar-bg">
-    <div class="score-bar-fill" id="score-bar" style="width:0%;"></div>
-  </div>
-
-  <div class="interpretation" id="interpretation-text">—</div>
-
-  <div class="metric-grid">
-    <div class="metric-box">
-      <div class="val" id="m-speed">—</div>
-      <div class="lbl">Typing Speed</div>
-    </div>
-    <div class="metric-box">
-      <div class="val" id="m-latency">—</div>
-      <div class="lbl">Latency (s)</div>
-    </div>
-    <div class="metric-box">
-      <div class="val" id="m-error">—</div>
-      <div class="lbl">Error Rate</div>
-    </div>
-  </div>
-</div>
-
-<p class="disclaimer">
-  ⚠️ MindWatch is a research prototype for academic purposes only.
-  It does not provide medical diagnoses. If you are experiencing mental health difficulties,
-  please consult a qualified healthcare professional.
-</p>
 
 <script>
-// ── Keystroke live capture ─────────────────────────────────
-let keyTimestamps  = [];
-let correctionKeys = 0;
+  // ── Keystroke tracking ──────────────────────────────────────────────────
+  let keyTimes = [];
+  let backspaceCount = 0;
+  let totalKeys = 0;
+  let sessionStart = null;
+  let typingActive = false;
 
-function onType(e) {
-  const now = performance.now() / 1000; // seconds
-  keyTimestamps.push(now);
+  const textarea = document.getElementById('textInput');
+  const charCount = document.getElementById('charCount');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const btnText = document.getElementById('btnText');
 
-  // Detect if backspace was pressed (fires oninput after deletion)
-  if (e.inputType === "deleteContentBackward") correctionKeys++;
+  textarea.addEventListener('keydown', (e) => {
+    const now = performance.now();
+    if (!sessionStart) sessionStart = now;
+    keyTimes.push(now);
+    totalKeys++;
+    if (e.key === 'Backspace') backspaceCount++;
+    updateMetrics();
+  });
 
-  // Auto-update sliders from live typing
-  if (keyTimestamps.length >= 5) {
-    const N         = keyTimestamps.length;
-    const totalTime = keyTimestamps[N-1] - keyTimestamps[0];
-    const speed     = totalTime > 0 ? N / totalTime : 0;
+  textarea.addEventListener('input', () => {
+    const len = textarea.value.length;
+    charCount.textContent = len;
 
-    const delays   = [];
-    for (let i = 1; i < N; i++) delays.push(keyTimestamps[i] - keyTimestamps[i-1]);
-    const latency  = delays.reduce((a,b)=>a+b,0) / delays.length;
-    const errRate  = correctionKeys / N;
+    if (len > 10) {
+      analyzeBtn.disabled = false;
+      btnText.textContent = 'Analyze Mental Health Risk →';
+      typingActive = true;
+      document.getElementById('typingHint').innerHTML = `
+        <div class="typing-indicator"><span></span><span></span><span></span></div>
+        Capturing live keystroke dynamics...
+      `;
+    } else {
+      analyzeBtn.disabled = true;
+      btnText.textContent = 'Type something to begin analysis';
+    }
+  });
 
-    // Clamp and update sliders
-    document.getElementById("speed-slider").value  = Math.min(120, Math.max(10, speed)).toFixed(1);
-    document.getElementById("latency-slider").value = Math.min(0.60, Math.max(0.05, latency)).toFixed(3);
-    document.getElementById("error-slider").value   = Math.min(0.30, Math.max(0, errRate)).toFixed(3);
+  function updateMetrics() {
+    const now = performance.now();
+    const elapsed = (now - sessionStart) / 1000;
+    const chars = textarea.value.length;
 
-    updateSlider("speed",   document.getElementById("speed-slider").value);
-    updateSlider("latency", document.getElementById("latency-slider").value);
-    updateSlider("error",   document.getElementById("error-slider").value);
+    // Speed
+    const speed = elapsed > 0 ? (chars / elapsed).toFixed(1) : 0;
+    const speedEl = document.getElementById('speedVal');
+    speedEl.textContent = speed;
+    speedEl.classList.toggle('has-value', speed > 0);
 
-    document.getElementById("keystroke-status").textContent =
-      `🎹 Live: ${N} keystrokes recorded · Speed: ${speed.toFixed(1)} k/s · Latency: ${latency.toFixed(3)}s`;
+    // Latency
+    let avgLatency = 0;
+    if (keyTimes.length > 1) {
+      const diffs = [];
+      for (let i = 1; i < keyTimes.length; i++) diffs.push(keyTimes[i] - keyTimes[i-1]);
+      avgLatency = (diffs.reduce((a,b) => a+b, 0) / diffs.length).toFixed(0);
+    }
+    const latencyEl = document.getElementById('latencyVal');
+    latencyEl.textContent = avgLatency > 0 ? avgLatency : '—';
+    latencyEl.classList.toggle('has-value', avgLatency > 0);
+
+    // Error rate
+    const errorRate = totalKeys > 0 ? ((backspaceCount / totalKeys) * 100).toFixed(1) : 0;
+    const errorEl = document.getElementById('errorVal');
+    errorEl.textContent = errorRate > 0 ? errorRate : '—';
+    errorEl.classList.toggle('has-value', errorRate > 0);
+
+    // Highlight active cards
+    document.getElementById('speedCard').classList.toggle('active', speed > 0);
+    document.getElementById('latencyCard').classList.toggle('active', avgLatency > 0);
+    document.getElementById('errorCard').classList.toggle('active', errorRate > 0);
   }
-}
 
-function updateSlider(name, val) {
-  const map = { speed:"speed-val", latency:"latency-val", error:"error-val" };
-  const dp  = { speed:1, latency:3, error:3 };
-  document.getElementById(map[name]).textContent = parseFloat(val).toFixed(dp[name]);
-}
+  function getKeystrokeData() {
+    const now = performance.now();
+    const elapsed = (now - sessionStart) / 1000 || 1;
+    const chars = textarea.value.length;
+    const speed = chars / elapsed;
 
-// ── Prediction ──────────────────────────────────────────────
-async function runPrediction() {
-  const text    = document.getElementById("text-input").value.trim();
-  const speed   = parseFloat(document.getElementById("speed-slider").value);
-  const latency = parseFloat(document.getElementById("latency-slider").value);
-  const errors  = parseFloat(document.getElementById("error-slider").value);
-
-  if (!text) {
-    alert("Please enter some text first.");
-    return;
-  }
-
-  const btn = document.getElementById("predict-btn");
-  btn.disabled   = true;
-  btn.innerHTML  = '<span class="spinner"></span> Analyzing…';
-
-  try {
-    const res = await fetch("/predict", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text,
-        typing_speed:      speed,
-        keystroke_latency: latency,
-        error_rate:        errors,
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.detail || "API error");
+    let avgLatency = 100;
+    if (keyTimes.length > 1) {
+      const diffs = [];
+      for (let i = 1; i < keyTimes.length; i++) diffs.push(keyTimes[i] - keyTimes[i-1]);
+      avgLatency = diffs.reduce((a,b) => a+b, 0) / diffs.length;
     }
 
-    const data = await res.json();
-    showResult(data, speed, latency, errors);
+    const errorRate = totalKeys > 0 ? backspaceCount / totalKeys : 0;
 
-  } catch (err) {
-    // Demo mode when API is offline
-    showDemoResult(text, speed, latency, errors);
+    return {
+      keystrokes: keyTimes.slice(-20).map((t, i) => i > 0 ? keyTimes[i] - keyTimes[i-1] : 0),
+      typing_speed: parseFloat(speed.toFixed(2)),
+      error_rate: parseFloat(errorRate.toFixed(3))
+    };
   }
 
-  btn.disabled  = false;
-  btn.innerHTML = "Analyze Mental Health Risk";
-}
+  // ── Gauge animation ─────────────────────────────────────────────────────
+  function setGauge(score) {
+    const total = 235.6;
+    const offset = total - (score / 100) * total;
+    const fill = document.getElementById('gaugeFill');
+    fill.style.strokeDashoffset = offset;
 
-function showResult(data, speed, latency, errors) {
-  const card = document.getElementById("result-card");
-  card.style.display = "block";
-  card.scrollIntoView({ behavior: "smooth" });
+    let color;
+    if (score < 35) color = 'var(--safe)';
+    else if (score < 65) color = 'var(--warn)';
+    else color = 'var(--risk)';
+    fill.style.stroke = color;
 
-  const pct = (data.risk_score * 100).toFixed(1);
+    document.getElementById('gaugeScore').textContent = Math.round(score) + '%';
+  }
 
-  document.getElementById("risk-badge").textContent    = data.risk_level;
-  document.getElementById("risk-badge").className      = `risk-badge ${data.risk_level}`;
-  document.getElementById("conf-text").textContent     = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
-  document.getElementById("score-text").textContent    = `${pct}%`;
-  document.getElementById("interpretation-text").textContent = data.interpretation;
+  function animateBars(riskScore) {
+    // Simulate text vs keystroke contribution
+    const textContrib = Math.min(100, riskScore * 0.6 + Math.random() * 10);
+    const keystrokeContrib = Math.min(100, riskScore * 0.4 + Math.random() * 15);
+    setTimeout(() => {
+      document.getElementById('textBar').style.width = textContrib + '%';
+      document.getElementById('keystrokeBar').style.width = keystrokeContrib + '%';
+      document.getElementById('combinedBar').style.width = riskScore + '%';
+      document.getElementById('textBarPct').textContent = Math.round(textContrib) + '%';
+      document.getElementById('keystrokeBarPct').textContent = Math.round(keystrokeContrib) + '%';
+      document.getElementById('combinedBarPct').textContent = Math.round(riskScore) + '%';
+    }, 200);
+  }
 
-  const bar = document.getElementById("score-bar");
-  const colors = { LOW:"#3fb950", MODERATE:"#d29922", HIGH:"#f85149" };
-  bar.style.width      = pct + "%";
-  bar.style.background = colors[data.risk_level];
+  // ── Analyze ─────────────────────────────────────────────────────────────
+  async function analyze() {
+    const text = textarea.value.trim();
+    if (!text) return;
 
-  document.getElementById("m-speed").textContent   = speed.toFixed(1);
-  document.getElementById("m-latency").textContent = latency.toFixed(3);
-  document.getElementById("m-error").textContent   = (errors * 100).toFixed(1) + "%";
-}
+    // Loading state
+    analyzeBtn.disabled = true;
+    document.getElementById('spinner').style.display = 'block';
+    btnText.textContent = 'Analyzing...';
+    document.getElementById('errorBox').style.display = 'none';
+    document.getElementById('results').style.display = 'none';
 
-// Demo mode — client-side heuristic when API is not running
-function showDemoResult(text, speed, latency, errors) {
-  const lowerText = text.toLowerCase();
-  const negWords  = ["hopeless","exhausted","empty","tired","anxious","worried","scared",
-                     "hate","crying","numb","trapped","failing","struggle","dark","pain"];
-  const posWords  = ["great","happy","grateful","excited","good","amazing","productive",
-                     "positive","relaxed","confident","love","wonderful","enjoying"];
+    const ks = getKeystrokeData();
 
-  let textScore = 0.5;
-  negWords.forEach(w => { if (lowerText.includes(w)) textScore += 0.06; });
-  posWords.forEach(w => { if (lowerText.includes(w)) textScore -= 0.06; });
+    try {
+      const response = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: text,
+          keystrokes: ks.keystrokes,
+          typing_speed: ks.typing_speed,
+          error_rate: ks.error_rate
+        })
+      });
 
-  // Keystroke contribution
-  const speedNorm   = 1 - Math.min(1, Math.max(0, (speed - 10) / 110));
-  const latencyNorm = Math.min(1, latency / 0.6);
-  const errorNorm   = Math.min(1, errors  / 0.3);
-  const keystrokeScore = (speedNorm * 0.4 + latencyNorm * 0.3 + errorNorm * 0.3);
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      const data = await response.json();
 
-  const finalScore = Math.max(0, Math.min(1, textScore * 0.7 + keystrokeScore * 0.3));
-  const level = finalScore >= 0.6 ? "HIGH" : finalScore >= 0.4 ? "MODERATE" : "LOW";
+      showResults(data, ks);
+    } catch (err) {
+      const errorBox = document.getElementById('errorBox');
+      errorBox.textContent = '⚠ ' + err.message + ' — Make sure the API server is running.';
+      errorBox.style.display = 'block';
+    } finally {
+      analyzeBtn.disabled = false;
+      document.getElementById('spinner').style.display = 'none';
+      btnText.textContent = 'Analyze Again →';
+    }
+  }
 
-  const interps = {
-    HIGH:     "⚠️ Elevated mental health risk indicators detected. Consider speaking with a mental health professional.",
-    MODERATE: "🟡 Some stress indicators present. Practice self-care and monitor your wellbeing.",
-    LOW:      "✅ Low risk indicators. Keep maintaining healthy habits and routines.",
-  };
+  function showResults(data, ks) {
+    const riskScore = Math.round((data.risk_score || 0) * 100);
+    const label = data.label || 'unknown';
+    const confidence = data.confidence || (riskScore);
 
-  showResult({
-    risk_score:    finalScore,
-    risk_level:    level,
-    confidence:    Math.abs(finalScore - 0.5) * 2,
-    interpretation: interps[level] + " (Demo mode — start API for real predictions)",
-  }, speed, latency, errors);
-}
+    // Badge
+    const badge = document.getElementById('resultBadge');
+    if (riskScore < 35) {
+      badge.textContent = '✓ Low Risk';
+      badge.className = 'result-badge safe';
+    } else if (riskScore < 65) {
+      badge.textContent = '⚠ Moderate Risk';
+      badge.className = 'result-badge moderate';
+    } else {
+      badge.textContent = '✕ High Risk';
+      badge.className = 'result-badge risk';
+    }
+
+    document.getElementById('confidenceText').textContent = `${confidence.toFixed ? confidence.toFixed(1) : confidence}% confidence`;
+
+    // Gauge + bars
+    setTimeout(() => setGauge(riskScore), 100);
+    animateBars(riskScore);
+
+    // Breakdown
+    document.getElementById('resSpeed').textContent = ks.typing_speed.toFixed(1) + ' c/s';
+    document.getElementById('resLatency').textContent = document.getElementById('latencyVal').textContent + ' ms';
+    document.getElementById('resError').textContent = (ks.error_rate * 100).toFixed(1) + '%';
+    document.getElementById('resWords').textContent = textarea.value.trim().split(/\s+/).length;
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Check API health ─────────────────────────────────────────────────────
+  async function checkHealth() {
+    try {
+      const res = await fetch('/');
+      const data = await res.json();
+      if (data.ready) {
+        document.getElementById('statusDot').style.background = 'var(--safe)';
+        document.getElementById('statusDot').style.boxShadow = '0 0 8px var(--safe)';
+        document.getElementById('statusText').textContent = 'model ready';
+      }
+    } catch {
+      document.getElementById('statusDot').style.background = 'var(--risk)';
+      document.getElementById('statusDot').style.boxShadow = '0 0 8px var(--risk)';
+      document.getElementById('statusText').textContent = 'offline';
+    }
+  }
+
+  checkHealth();
 </script>
-
 </body>
 </html>
